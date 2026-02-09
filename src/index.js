@@ -5,6 +5,7 @@ const helmet = require("helmet");
 
 const { getEnv } = require("./env");
 const { connectDb } = require("./db");
+const { seedAdmin } = require("./seed-admin");
 const { authRouter } = require("./routes/auth");
 const { publicProductsRouter, adminProductsRouter } = require("./routes/products");
 const { publicOrdersRouter, adminOrdersRouter } = require("./routes/orders");
@@ -13,6 +14,9 @@ const { requireAuth, requireAdmin } = require("./middleware/requireAuth");
 async function main() {
   const env = getEnv();
   await connectDb(env.MONGODB_URI);
+  
+  // Seed admin user on server start
+  await seedAdmin();
 
   const app = express();
   app.disable("x-powered-by");

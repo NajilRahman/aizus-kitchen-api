@@ -15,6 +15,9 @@ async function main() {
   const env = getEnv();
   await connectDb(env.MONGODB_URI);
   
+  // Wait a moment for database connection to be fully ready
+  await new Promise(resolve => setTimeout(resolve, 500));
+  
   // Seed admin user on server start
   await seedAdmin();
 

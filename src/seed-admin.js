@@ -5,6 +5,13 @@ const User = require("./models/User");
 
 async function seedAdmin() {
   const env = getEnv();
+  // eslint-disable-next-line no-console
+  console.log("🔍 Checking admin seed configuration...");
+  // eslint-disable-next-line no-console
+  console.log("ADMIN_BOOTSTRAP_USER:", env.ADMIN_BOOTSTRAP_USER ? "✅ Set" : "❌ Missing");
+  // eslint-disable-next-line no-console
+  console.log("ADMIN_BOOTSTRAP_PASS:", env.ADMIN_BOOTSTRAP_PASS ? "✅ Set" : "❌ Missing");
+  
   if (!env.ADMIN_BOOTSTRAP_USER || !env.ADMIN_BOOTSTRAP_PASS) {
     // eslint-disable-next-line no-console
     console.warn("⚠️  ADMIN_BOOTSTRAP_USER and ADMIN_BOOTSTRAP_PASS not set. Admin seeding skipped.");
@@ -12,31 +19,34 @@ async function seedAdmin() {
   }
 
   try {
+    // eslint-disable-next-line no-console
+    console.log("🌱 Seeding admin user:", env.ADMIN_BOOTSTRAP_USER);
     const existing = await User.findOne({ username: env.ADMIN_BOOTSTRAP_USER });
     if (existing) {
-      // Only update if role is not admin or password might have changed
-      if (existing.role !== "admin") {
-        existing.password = env.ADMIN_BOOTSTRAP_PASS; // Will be hashed by pre-save hook
-        existing.role = "admin";
-        await existing.save();
-        // eslint-disable-next-line no-console
-        console.log("✅ Admin updated:", env.ADMIN_BOOTSTRAP_USER);
-      } else {
-        // eslint-disable-next-line no-console
-        console.log("✅ Admin already exists:", env.ADMIN_BOOTSTRAP_USER);
-      }
+      // Always update to ensure password and role are correct
+      // eslint-disable-next-line no-console
+      console.log("📝 Admin user found, updating password and role...");
+      existing.password = env.ADMIN_BOOTSTRAP_PASS; // Will be hashed by pre-save hook
+      existing.role = "admin";
+      await existing.save();
+      // eslint-disable-next-line no-console
+      console.log("✅ Admin updated successfully:", env.ADMIN_BOOTSTRAP_USER);
     } else {
-      await User.create({
+      // eslint-disable-next-line no-console
+      console.log("➕ Creating new admin user...");
+      const newAdmin = await User.create({
         username: env.ADMIN_BOOTSTRAP_USER,
         password: env.ADMIN_BOOTSTRAP_PASS, // Will be hashed by pre-save hook
         role: "admin",
       });
       // eslint-disable-next-line no-console
-      console.log("✅ Admin created:", env.ADMIN_BOOTSTRAP_USER);
+      console.log("✅ Admin created successfully:", env.ADMIN_BOOTSTRAP_USER, "with ID:", newAdmin._id);
     }
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error("❌ Error seeding admin:", err.message);
+    // eslint-disable-next-line no-console
+    console.error("Stack trace:", err.stack);
     // Don't throw - let server start even if seeding fails
   }
 }

@@ -1,4 +1,5 @@
 require("dotenv").config();
+const bcrypt = require("bcryptjs");
 const { connectDb } = require("./db");
 const { getEnv } = require("./env");
 const User = require("./models/User");
@@ -22,25 +23,32 @@ async function seedAdmin() {
     // eslint-disable-next-line no-console
     console.log("🌱 Seeding admin user:", env.ADMIN_BOOTSTRAP_USER);
     const existing = await User.findOne({ username: env.ADMIN_BOOTSTRAP_USER });
-    if (existing) {
-      // Always update to ensure password and role are correct
-      // eslint-disable-next-line no-console
-      console.log("📝 Admin user found, updating password and role...");
-      existing.password = env.ADMIN_BOOTSTRAP_PASS; // Will be hashed by pre-save hook
-      existing.role = "admin";
-      await existing.save();
+    // Hash password manually to avoid pre-save hook issues
+    const passwordHash = await bcrypt.hash(env.ADMIN_BOOTSTRAP_PASS, 10);
+    
+    // Use findOneAndUpdate with upsert to bypass pre-save hook
+    const wasExisting = !!existing;
+    const admin = await User.findOneAndUpdate(
+      { username: env.ADMIN_BOOTSTRAP_USER },
+      {
+        username: env.ADMIN_BOOTSTRAP_USER,
+        password: passwordHash,
+        role: "admin",
+      },
+      {
+        upsert: true,
+        new: true,
+        setDefaultsOnInsert: true,
+        runValidators: true,
+      }
+    );
+    
+    if (wasExisting) {
       // eslint-disable-next-line no-console
       console.log("✅ Admin updated successfully:", env.ADMIN_BOOTSTRAP_USER);
     } else {
       // eslint-disable-next-line no-console
-      console.log("➕ Creating new admin user...");
-      const newAdmin = await User.create({
-        username: env.ADMIN_BOOTSTRAP_USER,
-        password: env.ADMIN_BOOTSTRAP_PASS, // Will be hashed by pre-save hook
-        role: "admin",
-      });
-      // eslint-disable-next-line no-console
-      console.log("✅ Admin created successfully:", env.ADMIN_BOOTSTRAP_USER, "with ID:", newAdmin._id);
+      console.log("✅ Admin created successfully:", env.ADMIN_BOOTSTRAP_USER, "with ID:", admin._id);
     }
   } catch (err) {
     // eslint-disable-next-line no-console

@@ -27,7 +27,7 @@ function requireAdmin(jwtSecret) {
     if (!token) return res.status(401).json({ error: "Missing token" });
     try {
       const payload = jwt.verify(token, jwtSecret);
-      if (!(payload && (payload.role === "admin" || payload.kind === "admin"))) {
+      if (!(payload && payload.role === "admin")) {
         return res.status(403).json({ error: "Admin access required" });
       }
       req.user = payload;

@@ -8,7 +8,7 @@ const { connectDb } = require("./db");
 const { authRouter } = require("./routes/auth");
 const { publicProductsRouter, adminProductsRouter } = require("./routes/products");
 const { publicOrdersRouter, adminOrdersRouter } = require("./routes/orders");
-const { requireAuth } = require("./middleware/requireAuth");
+const { requireAuth, requireAdmin } = require("./middleware/requireAuth");
 
 async function main() {
   const env = getEnv();
@@ -35,7 +35,7 @@ async function main() {
   app.use("/api/orders", publicOrdersRouter());
 
   // Protected (admin)
-  app.use("/api/admin", requireAuth(env.JWT_SECRET));
+  app.use("/api/admin", requireAdmin(env.JWT_SECRET));
   app.use("/api/admin/products", adminProductsRouter());
   app.use("/api/admin/orders", adminOrdersRouter());
 

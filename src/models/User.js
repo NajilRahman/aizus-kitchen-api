@@ -12,14 +12,17 @@ const UserSchema = new mongoose.Schema(
 );
 
 UserSchema.pre("save", async function (next) {
+  // Skip if password hasn't been modified
   if (!this.isModified("password")) {
-    return next();
+    return next ? next() : undefined;
   }
+  
   try {
+    // Hash the password
     this.password = await bcrypt.hash(this.password, 10);
-    next();
-  } catch (err) {
-    next(err);
+    return next ? next() : undefined;
+  } catch (error) {
+    return next ? next(error) : Promise.reject(error);
   }
 });
 

@@ -2,10 +2,18 @@ const express = require("express");
 const { z } = require("zod");
 const Order = require("../models/Order");
 
-function publicOrdersRouter() {
+function publicOrdersRouter({ requireAuth, jwtSecret }) {
   const router = express.Router();
 
-  router.post("/", async (req, res) => {
+  // GET /api/orders - Get current user's orders (requires auth)
+  router.get("/", requireAuth(jwtSecret), async (req, res) => {
+    const userId = req.user.sub;
+    const orders = await Order.find({ userId }).sort({ createdAt: -1 }).limit(100).lean();
+    return res.json({ orders });
+  });
+
+  // POST /api/orders - Create order (requires auth)
+  router.post("/", requireAuth(jwtSecret), async (req, res) => {
     const Body = z.object({
       orderRef: z.string().min(1),
       subtotal: z.coerce.number().min(0),
@@ -35,7 +43,8 @@ function publicOrdersRouter() {
     const parsed = Body.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: "Invalid body" });
 
-    const created = await Order.create(parsed.data);
+    const userId = req.user.sub;
+    const created = await Order.create({ ...parsed.data, userId });
     return res.status(201).json({ order: created });
   });
 

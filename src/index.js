@@ -39,7 +39,7 @@ async function main() {
 
   // Public
   app.use("/api/products", publicProductsRouter());
-  app.use("/api/orders", publicOrdersRouter());
+  app.use("/api/orders", publicOrdersRouter({ requireAuth, jwtSecret: env.JWT_SECRET }));
 
   // Protected (admin)
   app.use("/api/admin", requireAdmin(env.JWT_SECRET));

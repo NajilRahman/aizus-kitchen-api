@@ -31,6 +31,9 @@ function adminOrdersRouter() {
   // GET /api/admin/orders/:id/whatsapp - Generate WhatsApp message
   router.get("/:id/whatsapp", orderController.generateWhatsAppMessage);
 
+  // DELETE /api/admin/orders/:id - Delete order (soft delete)
+  router.delete("/:id", orderController.deleteOrder);
+
   return router;
 }
 

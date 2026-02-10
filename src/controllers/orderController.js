@@ -13,8 +13,15 @@ async function getUserOrders(req, res) {
     const searchQuery = parseSearch(req);
     const statusFilter = req.query.status;
 
-    // Build query
-    const query = { userId };
+    // Build query - exclude deleted items
+    const query = { 
+      userId,
+      $or: [
+        { "isDeleted.status": false },
+        { "isDeleted.status": { $exists: false } },
+        { "isDeleted": { $exists: false } },
+      ],
+    };
     
     if (statusFilter && statusFilter !== "all") {
       query.status = statusFilter;
@@ -102,8 +109,14 @@ async function getAllOrders(req, res) {
     const dateFrom = req.query.dateFrom;
     const dateTo = req.query.dateTo;
 
-    // Build query
-    const query = {};
+    // Build query - exclude deleted items
+    const query = {
+      $or: [
+        { "isDeleted.status": false },
+        { "isDeleted.status": { $exists: false } },
+        { "isDeleted": { $exists: false } },
+      ],
+    };
 
     if (statusFilter && statusFilter !== "all") {
       query.status = statusFilter;
@@ -153,7 +166,14 @@ async function getAllOrders(req, res) {
  */
 async function getOrderById(req, res) {
   try {
-    const order = await Order.findById(req.params.id).lean();
+    const order = await Order.findOne({
+      _id: req.params.id,
+      $or: [
+        { "isDeleted.status": false },
+        { "isDeleted.status": { $exists: false } },
+        { "isDeleted": { $exists: false } },
+      ],
+    }).lean();
     if (!order) {
       return res.status(404).json({ error: "Order not found" });
     }
@@ -177,7 +197,18 @@ async function updateOrderStatus(req, res) {
       return res.status(400).json({ error: "Invalid body", details: parsed.error.errors });
     }
 
-    const updated = await Order.findByIdAndUpdate(req.params.id, parsed.data, { new: true });
+    const updated = await Order.findOneAndUpdate(
+      {
+        _id: req.params.id,
+        $or: [
+          { "isDeleted.status": false },
+          { "isDeleted.status": { $exists: false } },
+          { "isDeleted": { $exists: false } },
+        ],
+      },
+      parsed.data,
+      { new: true }
+    );
     if (!updated) {
       return res.status(404).json({ error: "Order not found" });
     }
@@ -192,7 +223,14 @@ async function updateOrderStatus(req, res) {
  */
 async function generateBill(req, res) {
   try {
-    const order = await Order.findById(req.params.id).lean();
+    const order = await Order.findOne({
+      _id: req.params.id,
+      $or: [
+        { "isDeleted.status": false },
+        { "isDeleted.status": { $exists: false } },
+        { "isDeleted": { $exists: false } },
+      ],
+    }).lean();
     if (!order) {
       return res.status(404).json({ error: "Order not found" });
     }
@@ -302,7 +340,14 @@ async function generateBill(req, res) {
  */
 async function generateWhatsAppMessage(req, res) {
   try {
-    const order = await Order.findById(req.params.id).lean();
+    const order = await Order.findOne({
+      _id: req.params.id,
+      $or: [
+        { "isDeleted.status": false },
+        { "isDeleted.status": { $exists: false } },
+        { "isDeleted": { $exists: false } },
+      ],
+    }).lean();
     if (!order) {
       return res.status(404).json({ error: "Order not found" });
     }
@@ -346,6 +391,37 @@ async function generateWhatsAppMessage(req, res) {
   }
 }
 
+/**
+ * Delete order (soft delete)
+ */
+async function deleteOrder(req, res) {
+  try {
+    const order = await Order.findOne({
+      _id: req.params.id,
+      $or: [
+        { "isDeleted.status": false },
+        { "isDeleted.status": { $exists: false } },
+        { "isDeleted": { $exists: false } },
+      ],
+    });
+    
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    // Soft delete: set isDeleted.status to true and time to now
+    order.isDeleted = {
+      status: true,
+      time: new Date(),
+    };
+    await order.save();
+
+    return res.json({ ok: true });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to delete order" });
+  }
+}
+
 module.exports = {
   getUserOrders,
   createOrder,
@@ -354,5 +430,6 @@ module.exports = {
   updateOrderStatus,
   generateBill,
   generateWhatsAppMessage,
+  deleteOrder,
 };
 

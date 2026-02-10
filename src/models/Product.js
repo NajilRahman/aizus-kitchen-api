@@ -8,6 +8,10 @@ const ProductSchema = new mongoose.Schema(
     desc: { type: String, default: "" },
     imageUrl: { type: String, default: "" },
     isActive: { type: Boolean, default: true },
+    isDeleted: {
+      status: { type: Boolean, default: false },
+      time: { type: Date, default: null },
+    },
   },
   { timestamps: true }
 );

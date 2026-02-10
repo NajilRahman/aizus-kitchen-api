@@ -18,10 +18,10 @@ const path = require("path");
 async function main() {
   const env = getEnv();
   await connectDb(env.MONGODB_URI);
-  
+
   // Wait a moment for database connection to be fully ready
   await new Promise(resolve => setTimeout(resolve, 500));
-  
+
   // Seed admin user on server start
   await seedAdmin();
   // Seed shop config on server start
@@ -29,7 +29,10 @@ async function main() {
 
   const app = express();
   app.disable("x-powered-by");
-  app.use(helmet());
+  // Allow cross-origin resource sharing for static files (images)
+  app.use(helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" }
+  }));
   app.use(express.json({ limit: "10mb" })); // Increased for larger payloads
   app.use(express.urlencoded({ extended: true, limit: "10mb" }));
   // Separate frontend + backend:

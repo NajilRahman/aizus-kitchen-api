@@ -55,8 +55,8 @@ function adminProductsRouter() {
   });
 
   router.delete("/:id", async (req, res) => {
-    const updated = await Product.findByIdAndUpdate(req.params.id, { isActive: false }, { new: true });
-    if (!updated) return res.status(404).json({ error: "Not found" });
+    const deleted = await Product.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ error: "Not found" });
     return res.json({ ok: true });
   });
 

@@ -152,6 +152,12 @@ async function updateProduct(req, res) {
       return res.status(400).json({ error: "Invalid body", details: parsed.error.errors });
     }
 
+    // Remove empty imageUrl to preserve existing image
+    const updateData = { ...parsed.data };
+    if (updateData.imageUrl === "") {
+      delete updateData.imageUrl;
+    }
+
     const updated = await Product.findOneAndUpdate(
       {
         _id: req.params.id,
@@ -161,7 +167,7 @@ async function updateProduct(req, res) {
           { "isDeleted": { $exists: false } },
         ],
       },
-      parsed.data,
+      updateData,
       { new: true }
     );
     if (!updated) {

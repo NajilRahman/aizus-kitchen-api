@@ -12,7 +12,6 @@ const { publicOrdersRouter, adminOrdersRouter } = require("./routes/orders");
 const { uploadRouter } = require("./routes/upload");
 const { requireAuth, requireAdmin } = require("./middleware/requireAuth");
 const path = require("path");
-const express = require("express");
 
 async function main() {
   const env = getEnv();

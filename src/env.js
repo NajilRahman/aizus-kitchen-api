@@ -8,6 +8,9 @@ const EnvSchema = z.object({
   CLIENT_ORIGIN: z.string().optional().default("http://localhost:5173"),
   ADMIN_BOOTSTRAP_USER: z.string().optional(),
   ADMIN_BOOTSTRAP_PASS: z.string().optional(),
+  CLOUDINARY_CLOUD_NAME: z.string().optional(),
+  CLOUDINARY_API_KEY: z.string().optional(),
+  CLOUDINARY_API_SECRET: z.string().optional(),
 });
 
 function getEnv() {

@@ -1,12 +1,4 @@
 const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
-
-// Ensure uploads directory exists
-const uploadsDir = path.join(__dirname, "../../uploads");
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
 
 // Configure multer for memory storage (we'll process with sharp)
 const storage = multer.memoryStorage();
@@ -29,4 +21,3 @@ const upload = multer({
 });
 
 module.exports = { upload };
-

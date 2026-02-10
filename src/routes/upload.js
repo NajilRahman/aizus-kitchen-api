@@ -1,18 +1,20 @@
 const express = require("express");
 const sharp = require("sharp");
-const path = require("path");
-const fs = require("fs");
 const { upload } = require("../middleware/upload");
-const { requireAuth } = require("../middleware/requireAuth");
+const cloudinary = require("cloudinary").v2;
+const { Readable } = require("stream");
+const { getEnv } = require("../env");
 
 function uploadRouter({ jwtSecret, requireAuth }) {
   const router = express.Router();
 
-  // Ensure uploads directory exists
-  const uploadsDir = path.join(__dirname, "../../uploads");
-  if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
-  }
+  // Configure Cloudinary
+  const env = getEnv();
+  cloudinary.config({
+    cloud_name: env.CLOUDINARY_CLOUD_NAME,
+    api_key: env.CLOUDINARY_API_KEY,
+    api_secret: env.CLOUDINARY_API_SECRET
+  });
 
   // POST /api/admin/upload - Upload and optimize image
   router.post("/", requireAuth(jwtSecret), upload.single("image"), async (req, res) => {
@@ -21,36 +23,41 @@ function uploadRouter({ jwtSecret, requireAuth }) {
         return res.status(400).json({ error: "No image file provided" });
       }
 
-      // Generate unique filename
-      const timestamp = Date.now();
-      const randomStr = Math.random().toString(36).substring(2, 9);
-      const ext = path.extname(req.file.originalname) || ".jpg";
-      const filename = `product_${timestamp}_${randomStr}${ext}`;
-      const filepath = path.join(uploadsDir, filename);
-
-      // Optimize and save image
-      // Resize to max 1200px width, convert to JPEG with quality 85, and strip metadata
-      await sharp(req.file.buffer)
+      // Optimize image buffer with sharp locally first
+      const optimizedBuffer = await sharp(req.file.buffer)
         .resize(1200, 1200, {
           fit: "inside",
           withoutEnlargement: true,
         })
         .jpeg({ quality: 85, mozjpeg: true })
-        .toFile(filepath);
+        .toBuffer();
 
-      // Get file size after optimization
-      const stats = fs.statSync(filepath);
-      const fileSizeInMB = (stats.size / (1024 * 1024)).toFixed(2);
+      // Upload to Cloudinary using a stream
+      const uploadToCloudinary = (buffer) => {
+        return new Promise((resolve, reject) => {
+          const uploadStream = cloudinary.uploader.upload_stream(
+            {
+              folder: "products",
+              resource_type: "image",
+            },
+            (error, result) => {
+              if (error) return reject(error);
+              resolve(result);
+            }
+          );
+          Readable.from(buffer).pipe(uploadStream);
+        });
+      };
 
-      // Return the URL path (relative to /uploads)
-      const imageUrl = `/uploads/${filename}`;
+      const result = await uploadToCloudinary(optimizedBuffer);
 
       return res.json({
-        imageUrl,
-        filename,
-        size: stats.size,
-        sizeMB: fileSizeInMB,
+        imageUrl: result.secure_url,
+        filename: result.public_id,
+        size: result.bytes,
+        sizeMB: (result.bytes / (1024 * 1024)).toFixed(2),
       });
+
     } catch (error) {
       console.error("Image upload error:", error);
       return res.status(500).json({ error: "Failed to process image: " + error.message });
@@ -61,4 +68,3 @@ function uploadRouter({ jwtSecret, requireAuth }) {
 }
 
 module.exports = { uploadRouter };
-

@@ -6,9 +6,11 @@ const helmet = require("helmet");
 const { getEnv } = require("./env");
 const { connectDb } = require("./db");
 const { seedAdmin } = require("./seed-admin");
+const { seedShopConfig } = require("./seed-shop-config");
 const { authRouter } = require("./routes/auth");
 const { publicProductsRouter, adminProductsRouter } = require("./routes/products");
 const { publicOrdersRouter, adminOrdersRouter } = require("./routes/orders");
+const { publicShopConfigRouter, adminShopConfigRouter } = require("./routes/shopConfig");
 const { uploadRouter } = require("./routes/upload");
 const { requireAuth, requireAdmin } = require("./middleware/requireAuth");
 const path = require("path");
@@ -22,6 +24,8 @@ async function main() {
   
   // Seed admin user on server start
   await seedAdmin();
+  // Seed shop config on server start
+  await seedShopConfig();
 
   const app = express();
   app.disable("x-powered-by");
@@ -46,11 +50,13 @@ async function main() {
   // Public
   app.use("/api/products", publicProductsRouter());
   app.use("/api/orders", publicOrdersRouter({ requireAuth, jwtSecret: env.JWT_SECRET }));
+  app.use("/api/shop-config", publicShopConfigRouter());
 
   // Protected (admin)
   app.use("/api/admin", requireAdmin(env.JWT_SECRET));
   app.use("/api/admin/products", adminProductsRouter());
   app.use("/api/admin/orders", adminOrdersRouter());
+  app.use("/api/admin/shop-config", adminShopConfigRouter());
   app.use("/api/admin/upload", uploadRouter({ jwtSecret: env.JWT_SECRET, requireAuth }));
 
   app.listen(env.PORT, () => {

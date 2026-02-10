@@ -28,6 +28,11 @@ const OrderSchema = new mongoose.Schema(
     subtotal: { type: Number, required: true, min: 0 },
     message: { type: String, default: "" },
     source: { type: String, default: "web" },
+    status: { 
+      type: String, 
+      enum: ["pending", "confirmed", "preparing", "ready", "out_for_delivery", "delivered", "cancelled"], 
+      default: "pending" 
+    },
   },
   { timestamps: true }
 );
